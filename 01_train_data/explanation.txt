@@ -1,0 +1,96 @@
+The solution consisits of three steps:
+- Training (train.py):
+	- Load a image segmentation (unet) model and train the network
+- Testing (test.py):
+	- Load the trained model and generate the necessary output images
+- Post Processing (post_processing.py)
+	- Refine the generated output. Not used in the final result
+
+The other two files
+- data_loading.py: All data access related functionalities
+- models.py: model to be used for training is constructed here. I am using U-Net.
+
+Software used: Python, Keras, numpy etc
+
+Short explanation:
+- Training:
+	- Model: https://arxiv.org/pdf/1505.04597v1.pdf
+	- Input image and mask is divided input small patches of dimension 64x64. 
+	- Train the model with this dimension of 64x64. It is a U-Net model
+	- It takes a input 64x64 and produces a output mask of same dimension
+	- Each image is split into 64x64 dimension images, with successive tiles offseted by 16 pixels. So a 128x128 input image would produce (5x5=) 25 images of 64x64 image.
+	- The image is not normalised and I am not doing Batch normalisation between layers
+	- Initially I tried with 32x32 dimension but did not get good results. The output was patchy and not smooth
+	- Tried scaling it to 128x128 but it was memory hogging due to my implementation. I could have reduced the batch size but did not get time to experiment with it. Working on it.
+	- The error value used was 2*intersection/(sum of pred+actual) over the entire batch
+	- USing the output with error value of 0.86 on the validation set the output was still not smooth.
+	- Made the error value to 0.94 range and the output was more smoother now.
+	- The validation set size is 10% of the array of patches images. 
+	- Pasted the result of the filter in the end of this file and I have pasted the result for different filters in the train.py filter
+	- The model is stored offline
+
+
+
+- Testing:
+	- The test run produces the test results of using the above trained model and dumps the output image
+	- Like the input, the test images are also split into 64x64 images. However, unlike trained images, the output mask from each 64x64 is the center 32x32 output mask
+	- The reason is the edges of the mask does not have enough view of the input. Ideally the training should also have worked with it but again for time constraints, I tried manipulating the trained filter to produce the optimial output.
+	- So I have a overlapped images in the test input which are output so that the 32x32 tiles are stitched together properly
+
+Post Processing:
+	- Calcualte the contour are of different regions and mask out smaller contours
+	- The threshold value is estimated by hit and trial. Ideally, it could be calculated from the train set. Currently set it to 750
+	- Initially, for smaller filter like 32x32 I used a post processing approximation of the contour to a ecclipse region of simillar dimension
+	- However, this eclipse approximation was not required when the filter size is increased to 64x64.
+	- So in the current system it uses the CNN end to end with just a contour smaller in size are made zero.
+
+Next Steps:
+	- Tried dimension of 128x128. Memory constrain on my local system
+	- Tried a overlapping filter output i.e. take a 64x64 output and weigh the output mask. So instead of using a output of 32x32 we could use a gradually weighted output giving more weight to the center region output and gradually reducing the weight towards the end of the image. Working on this.
+	- Could have optimised it using a GPU system. Working on this too
+	- Using multiple outputs from different filters probably merging 32x32 output with 64x64 filter output. Possible idea.
+
+
+# Unet filter size of 64. Training vs Validation result
+# Kannappans-MacBook-Pro:01_train_data kannappanjayakodinitthilan$ python train.py 
+# Using Theano backend.
+# ('Mean R, G, B, M', 183.61820537735662, 177.39776022324151, 183.90411019355651, 0.09403537428634777)
+# ((18041, 3, 64, 64), (18041, 1, 64, 64), 169, 18041)
+# ('Num images total, train, valid ', 18041, 16236, 1805)
+# ('Mean R, G, B', 183.23607705232104, 180.03622619222907, 185.38108393745958)
+# Train on 16236 samples, validate on 1805 samples
+# Epoch 1/30
+# 16236/16236 [==============================] - 3229s - loss: -0.4525 - dice_coef: 0.4525 - val_loss: -0.8755 - val_dice_coef: 0.8755
+# Epoch 2/30
+# 16236/16236 [==============================] - 3623s - loss: -0.8498 - dice_coef: 0.8498 - val_loss: -0.8999 - val_dice_coef: 0.8999
+# Epoch 3/30
+# 16236/16236 [==============================] - 3723s - loss: -0.8818 - dice_coef: 0.8818 - val_loss: -0.9118 - val_dice_coef: 0.9118
+# Epoch 4/30
+# 16236/16236 [==============================] - 3631s - loss: -0.9050 - dice_coef: 0.9050 - val_loss: -0.9172 - val_dice_coef: 0.9172
+# Epoch 5/30
+# 16236/16236 [==============================] - 4332s - loss: -0.9164 - dice_coef: 0.9164 - val_loss: -0.9214 - val_dice_coef: 0.9214
+# Epoch 6/30
+# 16236/16236 [==============================] - 3184s - loss: -0.9225 - dice_coef: 0.9225 - val_loss: -0.9235 - val_dice_coef: 0.9235
+# Epoch 7/30
+# 16236/16236 [==============================] - 2911s - loss: -0.9272 - dice_coef: 0.9272 - val_loss: -0.9279 - val_dice_coef: 0.9279
+# Epoch 8/30
+# 16236/16236 [==============================] - 13522s - loss: -0.9325 - dice_coef: 0.9325 - val_loss: -0.9318 - val_dice_coef: 0.9318
+# Epoch 9/30
+# 16236/16236 [==============================] - 4167s - loss: -0.9322 - dice_coef: 0.9322 - val_loss: -0.9306 - val_dice_coef: 0.9306
+# Epoch 10/30
+# 16236/16236 [==============================] - 5038s - loss: -0.9368 - dice_coef: 0.9368 - val_loss: -0.9314 - val_dice_coef: 0.9314
+# Epoch 11/30
+# 16236/16236 [==============================] - 4495s - loss: -0.9392 - dice_coef: 0.9392 - val_loss: -0.9327 - val_dice_coef: 0.9327
+# Epoch 12/30
+# 16236/16236 [==============================] - 3828s - loss: -0.9404 - dice_coef: 0.9404 - val_loss: -0.9349 - val_dice_coef: 0.9349
+# Epoch 13/30
+# 16236/16236 [==============================] - 4705s - loss: -0.9432 - dice_coef: 0.9432 - val_loss: -0.9389 - val_dice_coef: 0.9389
+# Epoch 14/30
+# 16236/16236 [==============================] - 3485s - loss: -0.9451 - dice_coef: 0.9451 - val_loss: -0.9388 - val_dice_coef: 0.9388
+# Epoch 15/30
+# 16236/16236 [==============================] - 3793s - loss: -0.9459 - dice_coef: 0.9459 - val_loss: -0.9359 - val_dice_coef: 0.9359
+# Epoch 16/30
+# 16236/16236 [==============================] - 5891s - loss: -0.9485 - dice_coef: 0.9485 - val_loss: -0.9351 - val_dice_coef: 0.9351
+# Epoch 17/30
+# 16236/16236 [==============================] - 6547s - loss: -0.9481 - dice_coef: 0.9481 - val_loss: -0.9367 - val_dice_coef: 0.9367
+# Epoch 18/30

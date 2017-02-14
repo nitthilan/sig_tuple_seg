@@ -1,0 +1,28 @@
+
+Step 1: 
+- Analyse the Data
+	- 100 train images each of 128x128 dimension JPEG
+	- test images are of different dimensions but should match in scale
+- Add support for visualising the data using graphs and image sample dumps
+
+
+Step 2: List the things to try out
+- Create a end to end system:
+	- ability to train input
+	- ability to adapt to different models and experiment
+	- ability to modify and iterate 
+	- run the trained model for all the test cases
+- TensorFlow and Keras Implementation
+- Different models to tryout: segmentation: FCN, U-Net,
+- Custom model which tries to learn the optimum filter for the solution by changing the filters adaptively
+
+
+For remote system:
+- Ability to upload train data via link, file etc
+- Ability to review the train/test data
+	- Ability to get basic stats from the train data
+	- filenames and basic image dimensions etc
+- 
+
+Python packages:
+- scikit-learn, keras (theano/tensorflow), hdf5, 
